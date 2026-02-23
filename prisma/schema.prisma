@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String           @id @default(cuid())
+  role           UserRole
+  name           String
+  email          String           @unique
+  hashedPassword String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  studentProfile StudentProfile?
+  counselorNotesAsAdvisor CounselorNote[]  @relation("AdvisorNotes")
+  counselorNotesAsStudent CounselorNote[]  @relation("StudentNotes")
+  conversations  Conversation[]   @relation("StudentConversations")
+}
+
+enum UserRole {
+  student
+  advisor
+  admin
+}
+
+model StudentProfile {
+  id                 String        @id @default(cuid())
+  userId             String        @unique
+  school             String
+  graduationYear     Int
+  examSystem         String
+  targetMajor        String
+  targetUniversities String        @db.Text
+  digitalTwinId      String?
+  metrics            Json?
+  estimatedScore     Int
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  user               User          @relation(fields: [userId], references: [id])
+  pathwayPlans       PathwayPlan[]
+  deadlines          DeadlineItem[]
+}
+
+model CounselorNote {
+  id        String   @id @default(cuid())
+  advisorId String
+  studentId String
+  note      String   @db.Text
+  riskLevel String
+  createdAt DateTime @default(now())
+
+  advisor   User     @relation("AdvisorNotes", fields: [advisorId], references: [id])
+  student   User     @relation("StudentNotes", fields: [studentId], references: [id])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  studentId String
+  title     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  student   User      @relation("StudentConversations", fields: [studentId], references: [id])
+  messages  Message[]
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  role           MessageRole
+  content        String      @db.Text
+  agent          String
+  createdAt      DateTime    @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+}
+
+enum MessageRole {
+  user
+  assistant
+  system
+}
+
+model PathwayPlan {
+  id         String   @id @default(cuid())
+  studentId  String
+  planJson   Json
+  generatedAt DateTime @default(now())
+
+  student    StudentProfile @relation(fields: [studentId], references: [id])
+}
+
+model DeadlineItem {
+  id        String   @id @default(cuid())
+  studentId String
+  label     String
+  date      DateTime
+  source    String
+  urgency   String
+  completed Boolean  @default(false)
+
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+}
