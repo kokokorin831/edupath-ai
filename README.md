@@ -161,3 +161,4 @@ MIT License
 ---
 
 Made with ❤️ for students pursuing their dreams.
+# edupath-ai
